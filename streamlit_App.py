@@ -133,3 +133,46 @@ if st.session_state.positions:
         st.rerun()
 else:
     st.info("No positions saved yet.")
+
+# --- Excel Sheet Copier ---
+st.markdown("---")
+st.subheader("📁 Copy Sheet from One Excel File to Another")
+
+source_file = st.file_uploader("Upload Source Excel File", type=["xlsx"])
+target_file = st.file_uploader("Upload Target Excel File", type=["xlsx"])
+source_sheet = st.text_input("Source Sheet Name")
+target_sheet = st.text_input("Target Sheet Name")
+
+if st.button("Copy Sheet"):
+    if source_file and target_file and source_sheet and target_sheet:
+        try:
+            # Load source sheet as DataFrame
+            source_df = pd.read_excel(source_file, sheet_name=source_sheet)
+
+            # Load target workbook
+            wb = openpyxl.load_workbook(target_file)
+
+            # If sheet exists, delete it first
+            if target_sheet in wb.sheetnames:
+                del wb[target_sheet]
+
+            # Add new sheet with copied content
+            ws = wb.create_sheet(title=target_sheet)
+
+            for r_idx, row in enumerate(source_df.itertuples(index=False), 1):
+                for c_idx, value in enumerate(row, 1):
+                    ws.cell(row=r_idx, column=c_idx).value = value
+
+            # Save modified file to buffer
+            output = BytesIO()
+            wb.save(output)
+            st.success("✅ Sheet copied successfully!")
+
+            # Download button
+            st.download_button("📥 Download Modified File", data=output.getvalue(), file_name="modified_target.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        except Exception as e:
+            st.error(f"❌ Error: {e}")
+    else:
+        st.warning("Please upload both files and enter both sheet names.")
+
+
